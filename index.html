@@ -24,6 +24,7 @@
   <h1>🎓 StudyCalc</h1>
   <p class="tagline">Bolo aur calculation dekho</p>
 
+  <!-- Input box jahan answer dikhega -->
   <input type="text" id="input" placeholder="Result will appear here" readonly>
   <button class="mic-btn" onclick="startVoice()">🎤 Speak</button>
   <div id="result"></div>
@@ -39,6 +40,7 @@
 </div>
 
 <script>
+  // Voice recognition setup
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
   recognition.lang = "en-IN";
@@ -46,7 +48,7 @@
 
   recognition.onresult = function(event){
     let speechText = event.results[0][0].transcript;
-    // Mic se speech input input box me show karo
+    // User ne kya bola input box me show karo (optional)
     document.getElementById("input").value = speechText;
     calculateFromVoice(speechText);
   };
@@ -70,10 +72,10 @@
     try{
       let result = eval(text);
 
-      // Result input box me dikhao
+      // ✅ Answer directly input box me show karo
       document.getElementById("input").value = result;
 
-      // Optional: Result div me bhi dikhao (message)
+      // Optional: status message
       document.getElementById("result").innerText = "✅ Answer shown above";
 
       // Voice output
