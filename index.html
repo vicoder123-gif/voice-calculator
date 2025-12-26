@@ -3,17 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StudyCalc – Voice Calculator</title>
+<title>StudyCalc – Continuous Voice + Buttons</title>
 <style>
   * { box-sizing:border-box; font-family:Arial,sans-serif; margin:0; padding:0; }
   body { background:#0f172a; color:#fff; display:flex; justify-content:center; align-items:center; min-height:100vh; }
   .calculator { background:#1e293b; width:100%; max-width:360px; padding:20px; border-radius:16px; text-align:center; }
   h1 { margin:5px 0; font-size:24px; }
   .tagline { font-size:14px; color:#94a3b8; margin-bottom:15px; }
-  input { width:100%; padding:12px; border-radius:8px; border:none; font-size:16px; text-align:center; margin-bottom:15px; background:#334155; color:#000000; }
-  .mic-btn { width:100%; padding:14px; font-size:18px; border:none; border-radius:10px; background:#22c55e; color:#000; cursor:pointer; margin-bottom:15px; }
-  .mic-btn:active { transform:scale(0.98); }
+
+  #input { width:100%; padding:12px; border-radius:8px; border:none; font-size:18px; text-align:center; margin-bottom:15px; background:#334155; color:#fff; }
   #result { font-size:16px; color:#cbd5f5; min-height:20px; margin-bottom:10px; }
+
+  .mic-btn {
+    width:100%;
+    padding:14px;
+    font-size:18px;
+    border:4px solid;
+    border-radius:10px;
+    border-image: linear-gradient(45deg, #0022b9, #4143bb, #19943e, #00640d) 10;
+    color:#da2222;
+    cursor:pointer;
+    background:#0f172a;
+    transition:0.3s;
+  }
+
+  .mic-active {
+    animation: gradient-border 2s linear infinite;
+  }
+
+  @keyframes gradient-border {
+    0% { border-image: linear-gradient(45deg, #22c55e, #3b82f6, #facc15, #ef4444) 1; }
+    50% { border-image: linear-gradient(135deg, #22c55e, #3b82f6, #facc15, #ef4444) 1; }
+    100% { border-image: linear-gradient(225deg, #22c55e, #3b82f6, #facc15, #ef4444) 1; }
+  }
+
+  .buttons { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:10px; }
+  .btn { padding:20px; font-size:18px; border:none; border-radius:10px; background:#334155; color:#fff; cursor:pointer; transition:0.2s; }
+  .btn:hover, .btn.active { background:#22c55e; color:#000; }
+
   .examples { font-size:13px; color:#cbd5f5; }
   .examples span { display:block; margin-top:4px; }
 </style>
@@ -22,12 +49,36 @@
 
 <div class="calculator">
   <h1>🎓 StudyCalc</h1>
-  <p class="tagline">Bolo aur calculation dekho</p>
+  <p class="tagline">Continuous Voice + Buttons</p>
 
-  <!-- Input box jahan answer dikhega -->
-  <input type="text" id="input" placeholder="Result will appear here" readonly>
-  <button class="mic-btn" onclick="startVoice()">🎤 Speak</button>
+  <input type="text" id="input" placeholder="Result appears here" readonly>
+  <button class="mic-btn" id="micBtn">🎤 Tap to Allow Mic</button>
   <div id="result"></div>
+
+  <div class="buttons">
+    <button class="btn" onclick="press('7')">7</button>
+    <button class="btn" onclick="press('8')">8</button>
+    <button class="btn" onclick="press('9')">9</button>
+    <button class="btn" onclick="press('/')">/</button>
+
+    <button class="btn" onclick="press('4')">4</button>
+    <button class="btn" onclick="press('5')">5</button>
+    <button class="btn" onclick="press('6')">6</button>
+    <button class="btn" onclick="press('*')">*</button>
+
+    <button class="btn" onclick="press('1')">1</button>
+    <button class="btn" onclick="press('2')">2</button>
+    <button class="btn" onclick="press('3')">3</button>
+    <button class="btn" onclick="press('-')">-</button>
+
+    <button class="btn" onclick="press('0')">0</button>
+    <button class="btn" onclick="press('.')">.</button>
+    <button class="btn" onclick="calculate()">=</button>
+    <button class="btn" onclick="press('+')">+</button>
+
+    <button class="btn" style="grid-column: span 4; background:#ef4444;" onclick="clearInput()">C</button>
+  </div>
+
   <div class="examples">
     <p>Examples:</p>
     <span>4 plus 5</span>
@@ -40,55 +91,89 @@
 </div>
 
 <script>
+  const inputBox = document.getElementById("input");
+  const resultDiv = document.getElementById("result");
+  const buttons = document.querySelectorAll(".btn");
+  const micBtn = document.getElementById("micBtn");
+
+  function press(value){
+    inputBox.value += value;
+  }
+
+  function clearInput(){
+    inputBox.value = "";
+    resultDiv.innerText = "";
+  }
+
+  function calculate(){
+    try{
+      let result = eval(inputBox.value);
+      inputBox.value = result;
+      resultDiv.innerText = "✅ Answer shown above";
+      speechSynthesis.speak(new SpeechSynthesisUtterance("Answer is " + result));
+    } catch{
+      resultDiv.innerText = "❌ Invalid expression";
+      speechSynthesis.speak(new SpeechSynthesisUtterance("Sorry, invalid expression"));
+    }
+  }
+
   // Voice recognition setup
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
   recognition.lang = "en-IN";
-  recognition.continuous = false;
+  recognition.continuous = true;
+  recognition.interimResults = false;
+
+  // Start listening after user allows mic
+  micBtn.addEventListener("click", ()=>{
+    micBtn.classList.add("mic-active");
+    micBtn.innerText = "🎤 Listening...";
+    recognition.start();
+  });
 
   recognition.onresult = function(event){
-    let speechText = event.results[0][0].transcript;
-    // User ne kya bola input box me show karo (optional)
-    document.getElementById("input").value = speechText;
-    calculateFromVoice(speechText);
-  };
+    let speechText = event.results[event.results.length-1][0].transcript.toLowerCase();
+    resultDiv.innerText = "✅ Recognized: " + speechText;
 
-  function startVoice(){ recognition.start(); }
+    // Map words to symbols for hover effect
+    const wordMap = {
+      "plus":"+","minus":"-","into":"*","multiply by":"*","times":"*","divide by":"/",
+      "jod":"+","ghata":"-","guna":"*","bhag":"/",
+      "0":"0","1":"1","2":"2","3":"3","4":"4","5":"5","6":"6","7":"7","8":"8","9":"9"
+    };
 
-  function calculateFromVoice(text){
-    text = text.toLowerCase();
-    text = text
-      .replace("plus","+")
-      .replace("minus","-")
-      .replace("into","*")
-      .replace("multiply by","*")
-      .replace("times","*")
-      .replace("divide by","/")
-      .replace("jod","+")
-      .replace("ghata","-")
-      .replace("guna","*")
-      .replace("bhag","/");
+    // Highlight buttons spoken
+    buttons.forEach(btn=>btn.classList.remove("active"));
+    speechText.split(" ").forEach(word=>{
+      let val = wordMap[word];
+      if(val){
+        let btn = Array.from(buttons).find(b=>b.innerText===val);
+        if(btn) btn.classList.add("active");
+      }
+    });
+
+    // Replace words with symbols and calculate
+    let expr = speechText;
+    for(let key in wordMap){
+      expr = expr.replace(new RegExp(key, "g"), wordMap[key]);
+    }
 
     try{
-      let result = eval(text);
-
-      // ✅ Answer directly input box me show karo
-      document.getElementById("input").value = result;
-
-      // Optional: status message
-      document.getElementById("result").innerText = "✅ Answer shown above";
-
-      // Voice output
-      let speak = new SpeechSynthesisUtterance("Answer is " + result);
-      speechSynthesis.speak(speak);
+      let result = eval(expr);
+      inputBox.value = result;
+      speechSynthesis.speak(new SpeechSynthesisUtterance("Answer is " + result));
     } catch{
-      document.getElementById("result").innerText = "❌ Samajh nahi aaya";
-      let speak = new SpeechSynthesisUtterance("Sorry, samajh nahi aaya");
-      speechSynthesis.speak(speak);
+      resultDiv.innerText = "❌ Could not calculate";
     }
-  }
+
+    // Remove highlight after 1.5s
+    setTimeout(()=>buttons.forEach(btn=>btn.classList.remove("active")), 1500);
+  };
+
+  recognition.onend = function(){
+    recognition.start(); // Auto-restart for continuous listening
+  };
 </script>
 
 </body>
 </html>
-
