@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyCalc – Voice Calculator</title>
+<style>
+  * { box-sizing:border-box; font-family:Arial,sans-serif; margin:0; padding:0; }
+  body { background:#0f172a; color:#fff; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+  .calculator { background:#1e293b; width:100%; max-width:360px; padding:20px; border-radius:16px; text-align:center; }
+  h1 { margin:5px 0; font-size:24px; }
+  .tagline { font-size:14px; color:#94a3b8; margin-bottom:15px; }
+  input { width:100%; padding:12px; border-radius:8px; border:none; font-size:16px; text-align:center; margin-bottom:15px; background:#ffffff; color:#fff; }
+  .mic-btn { width:100%; padding:14px; font-size:18px; border:none; border-radius:10px; background:#22c55e; color:#000; cursor:pointer; margin-bottom:15px; }
+  .mic-btn:active { transform:scale(0.98); }
+  #result { font-size:20px; font-weight:bold; margin-bottom:15px; min-height:24px; }
+  .examples { font-size:13px; color:#cbd5f5; }
+  .examples span { display:block; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<div class="calculator">
+  <h1>🎓 StudyCalc</h1>
+  <p class="tagline">Bolo aur calculation dekho</p>
+
+  <input type="text" id="input" placeholder="Speak: 4 plus 5" readonly>
+  <button class="mic-btn" onclick="startVoice()">🎤 Speak</button>
+  <div id="result">Result yahan aayega</div>
+  <div class="examples">
+    <p>Examples:</p>
+    <span>4 plus 5</span>
+    <span>10 minus 3</span>
+    <span>6 into 7</span>
+    <span>20 divide by 4</span>
+    <span>4 jod 5 (Hinglish)</span>
+    <span>10 ghata 3 (Hinglish)</span>
+  </div>
+</div>
+
+<script>
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = new SpeechRecognition();
+  recognition.lang = "en-IN";
+  recognition.continuous = false;
+
+  recognition.onresult = function(event){
+    let speechText = event.results[0][0].transcript;
+    document.getElementById("input").value = speechText;
+    calculateFromVoice(speechText);
+  };
+
+  function startVoice(){ recognition.start(); }
+
+  function calculateFromVoice(text){
+    text = text.toLowerCase();
+    text = text
+      .replace("plus","+")
+      .replace("minus","-")
+      .replace("into","*")
+      .replace("multiply by","*")
+      .replace("times","*")
+      .replace("divide by","/")
+      .replace("jod","+")
+      .replace("ghata","-")
+      .replace("guna","*")
+      .replace("bhag","/");
+
+    try{
+      let result = eval(text);
+      document.getElementById("result").innerText = "Answer: "+result;
+      let speak = new SpeechSynthesisUtterance("Answer is " + result);
+      speechSynthesis.speak(speak);
+    } catch{
+      document.getElementById("result").innerText = "❌ Samajh nahi aaya";
+      let speak = new SpeechSynthesisUtterance("Sorry, samajh nahi aaya");
+      speechSynthesis.speak(speak);
+    }
+  }
+</script>
+
+</body>
+</html>
