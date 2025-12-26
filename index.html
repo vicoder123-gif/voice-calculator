@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StudyCalc – Continuous Voice + Buttons</title>
+<title>StudyCalc – Real-time Voice Hover</title>
 <style>
   * { box-sizing:border-box; font-family:Arial,sans-serif; margin:0; padding:0; }
   body { background:#0f172a; color:#fff; display:flex; justify-content:center; align-items:center; min-height:100vh; }
@@ -20,8 +20,8 @@
     font-size:18px;
     border:4px solid;
     border-radius:10px;
-    border-image: linear-gradient(45deg, #0022b9, #4143bb, #19943e, #00640d) 10;
-    color:#da2222;
+    border-image: linear-gradient(45deg, #22c55e, #3b82f6, #facc15, #ef4444) 1;
+    color:#000;
     cursor:pointer;
     background:#0f172a;
     transition:0.3s;
@@ -49,7 +49,7 @@
 
 <div class="calculator">
   <h1>🎓 StudyCalc</h1>
-  <p class="tagline">Continuous Voice + Buttons</p>
+  <p class="tagline">Real-time Voice + Buttons</p>
 
   <input type="text" id="input" placeholder="Result appears here" readonly>
   <button class="mic-btn" id="micBtn">🎤 Tap to Allow Mic</button>
@@ -78,16 +78,6 @@
 
     <button class="btn" style="grid-column: span 4; background:#ef4444;" onclick="clearInput()">C</button>
   </div>
-
-  <div class="examples">
-    <p>Examples:</p>
-    <span>4 plus 5</span>
-    <span>10 minus 3</span>
-    <span>6 into 7</span>
-    <span>20 divide by 4</span>
-    <span>4 jod 5 (Hinglish)</span>
-    <span>10 ghata 3 (Hinglish)</span>
-  </div>
 </div>
 
 <script>
@@ -96,15 +86,8 @@
   const buttons = document.querySelectorAll(".btn");
   const micBtn = document.getElementById("micBtn");
 
-  function press(value){
-    inputBox.value += value;
-  }
-
-  function clearInput(){
-    inputBox.value = "";
-    resultDiv.innerText = "";
-  }
-
+  function press(value){ inputBox.value += value; }
+  function clearInput(){ inputBox.value = ""; resultDiv.innerText = ""; }
   function calculate(){
     try{
       let result = eval(inputBox.value);
@@ -117,12 +100,18 @@
     }
   }
 
-  // Voice recognition setup
+  // Voice recognition
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
   recognition.lang = "en-IN";
   recognition.continuous = true;
-  recognition.interimResults = false;
+  recognition.interimResults = true; // ✅ Real-time results
+
+  const wordMap = {
+    "plus":"+","minus":"-","into":"*","multiply by":"*","times":"*","divide by":"/",
+    "jod":"+","ghata":"-","guna":"*","bhag":"/",
+    "0":"0","1":"1","2":"2","3":"3","4":"4","5":"5","6":"6","7":"7","8":"8","9":"9"
+  };
 
   // Start listening after user allows mic
   micBtn.addEventListener("click", ()=>{
@@ -132,28 +121,26 @@
   });
 
   recognition.onresult = function(event){
-    let speechText = event.results[event.results.length-1][0].transcript.toLowerCase();
-    resultDiv.innerText = "✅ Recognized: " + speechText;
+    // Get last interim result for real-time hover
+    let transcript = '';
+    for(let i=event.resultIndex; i<event.results.length; i++){
+      transcript += event.results[i][0].transcript.toLowerCase();
+    }
 
-    // Map words to symbols for hover effect
-    const wordMap = {
-      "plus":"+","minus":"-","into":"*","multiply by":"*","times":"*","divide by":"/",
-      "jod":"+","ghata":"-","guna":"*","bhag":"/",
-      "0":"0","1":"1","2":"2","3":"3","4":"4","5":"5","6":"6","7":"7","8":"8","9":"9"
-    };
+    let words = transcript.trim().split(" ");
+    let lastWord = words[words.length - 1];
 
-    // Highlight buttons spoken
-    buttons.forEach(btn=>btn.classList.remove("active"));
-    speechText.split(" ").forEach(word=>{
-      let val = wordMap[word];
-      if(val){
-        let btn = Array.from(buttons).find(b=>b.innerText===val);
-        if(btn) btn.classList.add("active");
-      }
-    });
+    // Remove previous highlights
+    buttons.forEach(btn => btn.classList.remove("active"));
 
-    // Replace words with symbols and calculate
-    let expr = speechText;
+    let val = wordMap[lastWord];
+    if(val){
+      let btn = Array.from(buttons).find(b=>b.innerText===val);
+      if(btn) btn.classList.add("active");
+    }
+
+    // Replace words with symbols for calculation
+    let expr = transcript;
     for(let key in wordMap){
       expr = expr.replace(new RegExp(key, "g"), wordMap[key]);
     }
@@ -161,13 +148,9 @@
     try{
       let result = eval(expr);
       inputBox.value = result;
-      speechSynthesis.speak(new SpeechSynthesisUtterance("Answer is " + result));
     } catch{
-      resultDiv.innerText = "❌ Could not calculate";
+      // Ignore invalid intermediate expressions
     }
-
-    // Remove highlight after 1.5s
-    setTimeout(()=>buttons.forEach(btn=>btn.classList.remove("active")), 1500);
   };
 
   recognition.onend = function(){
@@ -177,3 +160,4 @@
 
 </body>
 </html>
+
